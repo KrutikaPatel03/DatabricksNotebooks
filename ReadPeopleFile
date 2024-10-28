@@ -1,0 +1,14 @@
+spark.conf.set("fs.azure.account.key.demodatalackstorage.blob.core.windows.net", 
+               "2YwPQBHw76qE/DLj56rEnIva7UiPNaoBwjkP9yoysJXaT2G7NCClWmZjULs9DulDCuy7XRd2hUy1+AStxQKJmA==")
+
+               
+# Define the file path
+file_path = f"wasbs://csv@demodatalackstorage.blob.core.windows.net/people/people.csv"
+
+# Read the CSV file
+df = spark.read.format("csv").option("header", "true").load(file_path)
+
+# Display the DataFrame
+display(df)
+
+df.write.format("delta").save("wasbs://csvconformed@demodatalackstorage.blob.core.windows.net/people")
