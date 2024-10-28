@@ -1,0 +1,46 @@
+spark.conf.set("fs.azure.account.key.demodatalackstorage.dfs.core.windows.net", 
+               "loj9zt1b8fRph17MizWFRo0ZhxABDVVIkiMj6a0oK5jc0nDPdnn59H+TcbA49x81UZVjsQ49k7GY+AStNDZs/A==")
+
+from pyspark.sql.functions import col, lit
+from pyspark.sql.types import FloatType, StringType
+
+# Ensure the database exists or create it
+spark.sql("CREATE DATABASE IF NOT EXISTS databricksdemo")
+spark.conf.set("spark.sql.files.ignoreMissingFiles", "true")
+
+# Define the file path for specific day sales data
+file_path = "abfss://sales-data@demodatalackstorage.dfs.core.windows.net/"
+target_path = "abfss://sales-data-conformed@demodatalackstorage.dfs.core.windows.net/output"
+checkpoint_path = "abfss://checkpoint@demodatalackstorage.dfs.core.windows.net/"
+table_name = "databricksdemo.sales_data_table"
+
+spark.sql(f"DROP TABLE IF EXISTS {table_name}")
+dbutils.fs.rm(checkpoint_path, True)
+dbutils.fs.rm(target_path, True)
+
+# Read the CSV file using AutoLoader and transform the data
+df = (spark.readStream.format("cloudFiles")
+      .option("cloudFiles.format", "csv")
+      .option("header", "true")
+      .option("cloudFiles.includeExistingFiles", "true")  
+      .option("cloudFiles.inferColumnTypes", "true")
+      .option("cloudFiles.schemaLocation", checkpoint_path)
+      .load(file_path))
+
+# Example of handling new column 'discount_amount' (fill null values with 0)
+if 'discount_amount' not in df.columns:
+    df = df.withColumn("discount_amount", lit(0).cast(FloatType()))
+
+# Example of renaming 'total_amount' to 'net_amount' when the column is missing
+if 'net_amount' not in df.columns and 'total_amount' in df.columns:
+    df = df.withColumnRenamed("total_amount", "net_amount")
+
+df.writeStream \
+    .format("delta") \
+    .option("checkpointLocation", checkpoint_path) \
+    .option("mergeSchema", "true") \
+    .outputMode("append") \
+    .table(table_name)
+
+spark.sql("DESCRIBE TABLE databricksdemo.sales_data_table").show()
+display(spark.sql("SELECT * FROM databricksdemo.sales_data_table"))
