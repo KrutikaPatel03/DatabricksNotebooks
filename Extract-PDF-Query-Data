@@ -1,0 +1,36 @@
+spark.conf.set("fs.azure.account.key.demodatalackstorage.dfs.core.windows.net", 
+               "loj9zt1b8fRph17MizWFRo0ZhxABDVVIkiMj6a0oK5jc0nDPdnn59H+TcbA49x81UZVjsQ49k7GY+AStNDZs/A==")
+
+from pyspark.sql.functions import input_file_name
+from pyspark.sql.types import StringType
+import os
+
+# Define the base path for the PDF files
+pdf_base_path = "dbfs:/mnt/pdf-data/drone_manuals/raw/"
+
+# List all PDF files in the directory
+pdf_files = dbutils.fs.ls(pdf_base_path)
+
+# Define a schema for the DataFrame
+schema = "path STRING, content STRING"
+
+# Initialize an empty DataFrame with the defined schema
+pdf_df = spark.createDataFrame([], schema)
+
+# Loop through each PDF file, extract text, and append to the DataFrame
+for file in pdf_files:
+    # Ensure we are only processing PDF files
+    if file.name.endswith(".pdf"):
+        file_path = os.path.join(pdf_base_path, file.name)
+        # Use a custom function or library to extract text from PDF
+        # For demonstration, this part is abstracted
+        extracted_text = "Extracted text from the PDF"  # Replace this with actual extraction logic
+        # Append to the DataFrame
+        new_row = spark.createDataFrame([(file_path, extracted_text)], schema)
+        pdf_df = pdf_df.union(new_row)
+
+# Add a column with the filename extracted from the path
+pdf_df = pdf_df.withColumn("filename", input_file_name())
+
+# Save the DataFrame in Parquet format
+pdf_df.write.mode("overwrite").parquet("dbfs:/mnt/pdf-data/drone_manuals/processed/")
