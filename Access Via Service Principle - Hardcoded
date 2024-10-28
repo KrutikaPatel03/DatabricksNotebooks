@@ -1,0 +1,10 @@
+service_credential = "vD_8Q~SRl6bP26vLXltDdXDyzF4s4bdUOZP2wcnP" #""
+
+spark.conf.set("fs.azure.account.auth.type.demodatalackstorage.dfs.core.windows.net", "OAuth")
+spark.conf.set("fs.azure.account.oauth.provider.type.demodatalackstorage.dfs.core.windows.net", "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider")
+spark.conf.set("fs.azure.account.oauth2.client.id.demodatalackstorage.dfs.core.windows.net", "77c82476-c4e4-46c4-b613-64c32a0b31c4") #
+spark.conf.set("fs.azure.account.oauth2.client.secret.demodatalackstorage.dfs.core.windows.net", service_credential)
+spark.conf.set("fs.azure.account.oauth2.client.endpoint.demodatalackstorage.dfs.core.windows.net", "https://login.microsoftonline.com/f430dd7f-5930-4152-b14c-01e566de9dee/oauth2/token") #
+
+
+display(dbutils.fs.ls("abfss://csvconformed@demodatalackstorage.dfs.core.windows.net"))
